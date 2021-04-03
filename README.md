@@ -1,4 +1,4 @@
-## JSON
+## JSON - GSON
 웹서버로부터 응답을 받았을 때 응답 데이터의 포맷이 JSON이라는 포맷으로 되어 있는 경우가 많다.  
 JSON은 자바스크립트 객체 포맷의 데이터를 주고받을 때 사용할 수 있도록 만든 것이다.  
 따라서 자바스크립트 객체 포맷과 거의 동일하다.  
@@ -59,8 +59,76 @@ JSON은 자바스크립트 객체 포맷의 데이터를 주고받을 때 사용
   그 안에는 boxOfficeType과 showRange 그리고 dailyBoxOfficeList라는 이름의 속성이 들어가 있다.  
   그 중에 dailyBoxOfficeList 속성의 값은 배열이라 대괄호로 된 값이 들어가 있다.  
   그 배열 안에 들어가 있는 각각의 객체가 하나의 영화 정보입니다.
+
+```
+JSON으로 받은 응답 데이터는 문자열로 되어 있으므로 그 응답 데이터 중에서 특정 속성의 값을 찾아내려면 문자열 처리를 해주어야 한다.  
+어떤 객체 안에 들어있는 속성을 찾아내기 위해 중괄호나 콜론, 콤마 등을 이용해야 하는 의미이다.  
+따라서 indexOf나 substring과 같은 메소드들이 사용되고 아주 복잡하고 많은 양의 코드가 만들어지게 된다.  
+그런데 자바스크립트에서는 JSON 문자열을 자바스크립트 객체로 만드는 것이 메소드 호출 하나로 끝난다.  
+자바스크립트의 객체 포맷과 JSON 기본 구조가 같고 둘 간에 쉽게 변환할 수 있도록 미리 만들어두었기 때문이다.  
+자바에서 Gson을 사용하면 한 줄의 코드만으로도 JSON 문자열을 자바 객체로 바꾸어줄 수 있다.  
+```
   
 ### GSON
 JSON 데이터는 그대로 JavaScript로 바꿔쓸 수 있기 때문에 Node.js나 웹 브라우저에서 바로 사용이 가능한 장잠이 있다.  
 반면 안드로이드의 경우 JavaScript가 아닌 Java를 사용하기 때문에 JSON 문자열이 넘어오면그 문자열 데이터를 자바 객체로 바꿔주는 작업이 필요하다.  
 이때 사용하는 여러 라이브러리가 있는데 대표적으로 구글에서 지원하는 GSON 라이브러리를 사용한다.
+
+## GSON 사용
+GSON은 JSON 문자열을 객체로 변환해 주는 라이브러리이다. 다시말해 JSON 문자열을 JAVA객체로 만들어준다.  
+Volley를 이용해 웹서버로부터 JSON응답을 받으면 GSON을 이용해 자바 객체로 바꾸고, 그 객체안에 들어있는 데이터를 사용하게 된다.  
+
+1. 우선 GSON이 외부라이브러리이기 때문에 Build.gradle에 GSON을 추가
+2. JSON 문자열의 속성에 맞는 자바 클래스를 정의  
+  (자바스크립트는 객체의 포맷이 객체 안에 속성들이 들어가 있는 구조를 가지고 있지만 자바의 객체는 그런 구조가 아니라서  
+  JSON 문자열을 자바 객체로 변환하기 위해서는 먼저 자바 클래스를 정의해야 한다)  
+  ```JAVA
+  public class MovieList {
+    MovieListResult boxOfficeResult;
+  }
+  ```
+  응답 데이터의 가장 바깥이 중괄호이므로 이 객체를 변환할 클래스로 MovieList라는 이름의 클래스를 정의한다.  
+  이 클래스 안에는 boxOfficeResult라는 이름의 변수를 추가하고, 여기에서 변수의 이름은 JSON 문자열에서 속성의 이름과 같다.  
+  그리고 변수의 자료형은 JSON 문자열에서 속성값의 자료형과 같다. JSON 문자열에서 boxOfficeResult 속성의 값이 다시 객체이므로   
+  이 객체를 변환하여 담을 클래스를 MovieListResult라는 이름으로 만들고 boxOfficeResult 속성의 자료형으로 지정한다.
+  ```JAVA
+  public class MovieListResult {
+    String boxofficeType;
+    String showRange;
+    ArrayList<Movie> dailyBoxOfficeList = new ArrayList<Movie>();
+  }
+  ```
+3. JSON 문자열에서 배열의 표현
+  JSON 문자열의 속성 중에서 값이 배열인 경우, 즉 대괄호로 표시된 경우에는 자바 클래스를 정의할 때 ArrayList 자료형을 사용할 수 있다.  
+그리고 그 배열 안에 다시 객체들이 들어가는 경우 해당 객체들을 위한 자바 클래스를 또 만들어야 한다. 이 클래스는 ArrayList의 제네릭 타입으로 지정된다.
+```JAVA
+ArrayList<Movie> dailyBoxOfficeList = new ArrayList<Movie>();
+```
+여기서 배열안에 들어가는 Movie객체는 다음과 같이 영화 정보를 담을 변수들을 포함하게 된다.  
+```JAVA
+public class Movie {
+    String rnum;
+    String rank;
+    String rankInten;
+    String rankOldAndNew;
+    String movieCd;
+    String movieNm;
+    String openDt;
+    String salesAmt;
+    String salesShare;
+    String salesInten;
+    String salesChange;
+    String salesAcc;
+    String audiCnt;
+    String audiInten;
+    String audiChange;
+    String audiAcc;
+    String scrnCnt;
+    String showCnt
+}
+```
+4. GSON으로 변환
+```JAVA
+Gson gson = new Gson();
+MovieList movieList = gson.fromJson(response, MovieList.class);
+```
